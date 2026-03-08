@@ -149,10 +149,13 @@ curl -X POST http://localhost:3050/v1/bundle/tip \
 
 ## Development
 
+This project uses [pnpm](https://pnpm.io/) (`pnpm@10.31.0`) as its package manager and [Turborepo](https://turbo.build/) (`turbo.json`) for build orchestration, following the unified Fabrknt product suite pattern.
+
 ```bash
-npm install
-npm run build
-npm run dev    # Start server on port 3050
+pnpm install
+pnpm build     # Runs turbo across all packages
+pnpm test      # Runs turbo across all packages
+pnpm dev       # Start server on port 3050
 ```
 
 ## Fabrknt Product Suite
