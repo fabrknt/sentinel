@@ -2,4 +2,7 @@ node_modules
 dist
 .turbo
 .env
+*.db
+*.db-shm
+*.db-wal
 *.tsbuildinfo
