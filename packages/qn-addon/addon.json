@@ -1,8 +1,8 @@
 {
   "name": "Fabrknt DeFi Toolkit",
   "slug": "fabrknt-defi-toolkit",
-  "description": "Chain-agnostic transaction security analysis detecting 12 patterns across Solana and EVM. Execution plan builders (DCA, rebalance, grid trading) and Jito bundle management.",
-  "version": "0.1.0",
+  "description": "Chain-agnostic transaction security analysis detecting 17 patterns across Solana and EVM. Pre-execution simulation sandbox, execution plan builders (DCA, rebalance, grid trading), and MEV-protected bundle management via Jito (Solana) and Flashbots/MEV-Share (EVM).",
+  "version": "0.2.0",
   "author": "Fabrknt",
   "category": "developer-tools",
   "support": {
@@ -33,12 +33,15 @@
       "id": "starter",
       "name": "Starter",
       "price": 0,
-      "description": "Transaction security analysis (12 patterns) and execution plan builders.",
+      "description": "Transaction security analysis (17 patterns), pre-execution simulation, and execution plan builders.",
       "rate_limit": {
         "requests_per_minute": 100
       },
       "features": [
-        "Transaction security analysis (8 Solana + 4 EVM patterns)",
+        "Transaction security analysis (8 Solana + 9 EVM patterns)",
+        "Pre-execution simulation sandbox (EVM + Solana)",
+        "Honeypot detection via simulation",
+        "Bytecode-level opcode analysis",
         "Batch payout builder",
         "Recurring payment scheduler",
         "Token vesting scheduler",
@@ -51,16 +54,19 @@
       "id": "pro",
       "name": "Pro",
       "price": 49,
-      "description": "All Starter features plus Jito bundle management and priority support.",
+      "description": "All Starter features plus MEV-protected bundle management for Solana (Jito) and EVM (Flashbots/MEV-Share).",
       "rate_limit": {
         "requests_per_minute": 200
       },
       "features": [
         "All Starter features",
-        "Jito bundle submission",
-        "Bundle status tracking",
-        "Bundle confirmation polling",
-        "Dynamic tip calculation",
+        "Jito bundle submission (Solana)",
+        "Flashbots bundle submission (EVM)",
+        "MEV-Share private order flow (EVM)",
+        "Flashbots Protect single-tx privacy (EVM)",
+        "Bundle simulation (Flashbots eth_callBundle)",
+        "Bundle status tracking (Jito + Flashbots)",
+        "Dynamic tip calculation (Jito)",
         "Priority support"
       ]
     }
@@ -69,13 +75,13 @@
     {
       "method": "POST",
       "path": "/v1/guard/analyze",
-      "description": "Analyze a transaction for security patterns (Solana or EVM)",
+      "description": "Analyze a transaction for security patterns with optional simulation (Solana or EVM)",
       "plan": "starter"
     },
     {
       "method": "POST",
       "path": "/v1/guard/analyze-raw",
-      "description": "Analyze raw transaction bytes",
+      "description": "Analyze raw transaction bytes for pattern detection only",
       "plan": "starter"
     },
     {
@@ -117,19 +123,31 @@
     {
       "method": "POST",
       "path": "/v1/bundle/submit",
-      "description": "Submit a Jito bundle",
+      "description": "Submit a bundle (Jito for Solana, Flashbots/MEV-Share for EVM)",
+      "plan": "pro"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/bundle/simulate",
+      "description": "Simulate an EVM bundle via Flashbots eth_callBundle",
+      "plan": "pro"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/bundle/private-tx",
+      "description": "Send a single private EVM transaction via Flashbots Protect",
       "plan": "pro"
     },
     {
       "method": "GET",
       "path": "/v1/bundle/status/:bundleId",
-      "description": "Get bundle status",
+      "description": "Get bundle status (Jito or Flashbots)",
       "plan": "pro"
     },
     {
       "method": "POST",
       "path": "/v1/bundle/tip",
-      "description": "Get recommended Jito tip amount",
+      "description": "Get recommended Jito tip amount and tip account",
       "plan": "pro"
     }
   ]

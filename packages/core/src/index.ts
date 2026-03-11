@@ -7,6 +7,9 @@ export {
   analyzeTransaction,
   analyzeSolanaTransaction,
   analyzeEvmTransaction,
+  resolveOracleFromRegistry,
+  resolveOracleBatch,
+  DENOMINATIONS,
 } from "./guard";
 
 // Bundle — atomic transaction bundle management
@@ -15,13 +18,20 @@ export {
   BundleManager,
   JitoError,
   JITO_TIP_ACCOUNTS,
+  FlashbotsBundleManager,
+  FlashbotsError,
 } from "./bundle";
 export type {
   BaseBundleConfig,
   JitoBundle,
   JitoBundleConfig,
   BundleConfig,
+  FlashbotsBundleConfig,
+  AuthSigner,
 } from "./bundle";
+
+// Simulation — pre-execution transaction simulation
+export { SimulationSandbox } from "./simulation";
 
 // Patterns — execution pattern builders (chain-agnostic)
 export {

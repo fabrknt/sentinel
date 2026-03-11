@@ -201,6 +201,35 @@ describe("Guard", () => {
       expect(r.blockedBy).toContain(PatternId.MintKill);
     });
   });
+
+  describe("simulation integration", () => {
+    it("returns null simulator when simulation is not enabled", () => {
+      const guard = new Guard();
+      expect(guard.getSimulator()).toBeNull();
+    });
+
+    it("creates simulator when simulation config is provided", () => {
+      const guard = new Guard({
+        enableSimulation: true,
+        simulationConfig: { evmForkUrl: "http://localhost:8545" },
+      });
+      expect(guard.getSimulator()).not.toBeNull();
+    });
+
+    it("re-initializes simulator on config update", () => {
+      const guard = new Guard();
+      expect(guard.getSimulator()).toBeNull();
+
+      guard.updateConfig({
+        enableSimulation: true,
+        simulationConfig: { evmForkUrl: "http://localhost:8545" },
+      });
+      expect(guard.getSimulator()).not.toBeNull();
+
+      guard.updateConfig({ enableSimulation: false });
+      expect(guard.getSimulator()).toBeNull();
+    });
+  });
 });
 
 // ── analyzeTransaction dispatcher tests ──
@@ -511,6 +540,8 @@ describe("analyzeSolanaTransaction", () => {
 // ── EVM detector tests ──
 
 describe("analyzeEvmTransaction", () => {
+  // ── EVM-004: Unauthorized Access ──
+
   it("detects UnauthorizedAccess for renounceOwnership (EVM-004)", () => {
     const tx = makeEvmTx({
       instructions: [
@@ -531,7 +562,7 @@ describe("analyzeEvmTransaction", () => {
     expect(w.severity).toBe(Severity.Critical);
   });
 
-  it("detects UnauthorizedAccess for transferOwnership (warning level)", () => {
+  it("detects UnauthorizedAccess for transferOwnership (alert level for untrusted)", () => {
     const tx = makeEvmTx({
       instructions: [
         {
@@ -546,8 +577,32 @@ describe("analyzeEvmTransaction", () => {
       (w) => w.patternId === PatternId.UnauthorizedAccess
     )!;
     expect(w).toBeDefined();
+    expect(w.severity).toBe(Severity.Alert);
+  });
+
+  it("reduces severity for trusted callers (EVM-004)", () => {
+    const tx = makeEvmTx({
+      signers: ["0xTrustedAdmin"],
+      instructions: [
+        {
+          programId: "0xTargetContract",
+          keys: [],
+          data: "0xf2fde38b0000000000000000000000001234",
+        },
+      ],
+    });
+    const config: GuardConfig = {
+      trustedEvmAddresses: ["0xTrustedAdmin"],
+    };
+    const warnings = analyzeEvmTransaction(tx, config);
+    const w = warnings.find(
+      (w) => w.patternId === PatternId.UnauthorizedAccess
+    )!;
+    expect(w).toBeDefined();
     expect(w.severity).toBe(Severity.Warning);
   });
+
+  // ── EVM-002: Flash Loan Attack ──
 
   it("detects FlashLoanAttack when flash loan + DEX swap (EVM-002)", () => {
     const tx = makeEvmTx({
@@ -570,6 +625,33 @@ describe("analyzeEvmTransaction", () => {
     ).toBe(true);
   });
 
+  it("detects FlashLoanAttack when flash loan + oracle read (EVM-002)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+          keys: [],
+          data: "0x5cffe9de",
+        },
+        {
+          programId: "0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419", // ETH/USD Chainlink
+          keys: [],
+          data: "0xfeaf968c", // latestRoundData
+        },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.FlashLoanAttack &&
+          w.message.includes("oracle")
+      )
+    ).toBe(true);
+  });
+
+  // ── EVM-003: Front-running ──
+
   it("detects FrontRunning when same router swapped multiple times (EVM-003)", () => {
     const router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d";
     const tx = makeEvmTx({
@@ -584,6 +666,27 @@ describe("analyzeEvmTransaction", () => {
       warnings.some((w) => w.patternId === PatternId.FrontRunning)
     ).toBe(true);
   });
+
+  it("detects sandwich pattern (swap-action-swap) (EVM-003)", () => {
+    const router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d";
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: router, keys: [], data: "0x022c0d9f" }, // swap
+        { programId: "0xVictimContract", keys: [], data: "0x12345678" }, // victim action
+        { programId: router, keys: [], data: "0x022c0d9f" }, // swap back
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.FrontRunning &&
+          w.message.includes("Swap-action-swap")
+      )
+    ).toBe(true);
+  });
+
+  // ── EVM-001: Reentrancy ──
 
   it("detects ReentrancyAttack when contract called 3+ times with transfers (EVM-001)", () => {
     const contract = "0xabcdef1234567890abcdef1234567890abcdef12";
@@ -615,7 +718,266 @@ describe("analyzeEvmTransaction", () => {
     ).toBe(false);
   });
 
+  // ── EVM-005: Proxy Manipulation ──
+
+  it("detects ProxyManipulation for multiple upgrades (EVM-005)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: "0xProxy1", keys: [], data: "0x3659cfe6" }, // upgradeTo
+        { programId: "0xProxy2", keys: [], data: "0x3659cfe6" }, // upgradeTo
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some((w) => w.patternId === PatternId.ProxyManipulation)
+    ).toBe(true);
+    const w = warnings.find(
+      (w) =>
+        w.patternId === PatternId.ProxyManipulation &&
+        w.severity === Severity.Critical
+    )!;
+    expect(w.message).toContain("2 proxy upgrade");
+  });
+
+  it("detects ProxyManipulation for upgrade inside multicall (EVM-005)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: "0xMulticall", keys: [], data: "0xac9650d8" }, // multicall
+        { programId: "0xProxy1", keys: [], data: "0x3659cfe6" }, // upgradeTo
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.ProxyManipulation &&
+          w.message.includes("multicall")
+      )
+    ).toBe(true);
+  });
+
+  it("detects ProxyManipulation for upgrade with many other ops (EVM-005)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: "0xProxy1", keys: [], data: "0x3659cfe6" },
+        { programId: "0xA", keys: [], data: "0x12345678" },
+        { programId: "0xB", keys: [], data: "0x12345678" },
+        { programId: "0xC", keys: [], data: "0x12345678" },
+        { programId: "0xD", keys: [], data: "0x12345678" },
+        { programId: "0xE", keys: [], data: "0x12345678" },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.ProxyManipulation &&
+          w.severity === Severity.Warning
+      )
+    ).toBe(true);
+  });
+
+  // ── EVM-006: Selfdestruct Abuse ──
+
+  it("detects SelfdestructAbuse for short selfdestruct-like opcode (EVM-006)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0xTarget",
+          keys: [],
+          data: "0xff",
+        },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some((w) => w.patternId === PatternId.SelfdestructAbuse)
+    ).toBe(true);
+  });
+
+  it("detects SelfdestructAbuse for delegatecall selector (EVM-006)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0xTarget",
+          keys: [],
+          data: "0xf4",
+        },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some((w) => w.patternId === PatternId.SelfdestructAbuse)
+    ).toBe(true);
+  });
+
+  // ── EVM-007: Approval Exploitation ──
+
+  it("detects ApprovalExploitation for unlimited approve (EVM-007)", () => {
+    // approve(spender, maxUint256) - proper 4+32+32 byte calldata
+    const maxApproveData =
+      "0x095ea7b3" +
+      "0000000000000000000000001234567890abcdef1234567890abcdef12345678" +
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: "0xToken", keys: [], data: maxApproveData },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.ApprovalExploitation &&
+          w.message.includes("Unlimited")
+      )
+    ).toBe(true);
+  });
+
+  it("detects ApprovalExploitation for approve-then-transferFrom (EVM-007)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0xToken",
+          keys: [],
+          data: "0x095ea7b3" + "0".repeat(128),
+        },
+        {
+          programId: "0xToken",
+          keys: [],
+          data: "0x23b872dd" + "0".repeat(128),
+        },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.ApprovalExploitation &&
+          w.message.includes("Approve followed by immediate transferFrom")
+      )
+    ).toBe(true);
+  });
+
+  it("detects batch approval phishing (EVM-007)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0xToken1",
+          keys: [],
+          data: "0x095ea7b3" + "0".repeat(128),
+        },
+        {
+          programId: "0xToken2",
+          keys: [],
+          data: "0x095ea7b3" + "0".repeat(128),
+        },
+        {
+          programId: "0xToken3",
+          keys: [],
+          data: "0x095ea7b3" + "0".repeat(128),
+        },
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.ApprovalExploitation &&
+          w.message.includes("batch approval")
+      )
+    ).toBe(true);
+  });
+
+  // ── EVM-008: Oracle Manipulation ──
+
+  it("detects OracleManipulation when swap precedes oracle read (EVM-008)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+          keys: [],
+          data: "0x022c0d9f",
+        }, // swap
+        {
+          programId: "0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419",
+          keys: [],
+          data: "0xfeaf968c",
+        }, // latestRoundData
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some((w) => w.patternId === PatternId.OracleManipulation)
+    ).toBe(true);
+  });
+
+  it("detects OracleManipulation for oracle sandwiched between swaps (EVM-008)", () => {
+    const router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d";
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: router, keys: [], data: "0x022c0d9f" }, // swap
+        {
+          programId: "0xSomeContract",
+          keys: [],
+          data: "0xfeaf968c",
+        }, // latestRoundData
+        { programId: router, keys: [], data: "0x022c0d9f" }, // swap back
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.OracleManipulation &&
+          w.message.includes("sandwiched")
+      )
+    ).toBe(true);
+  });
+
+  it("detects OracleManipulation for getReserves usage with swaps (EVM-008)", () => {
+    const tx = makeEvmTx({
+      instructions: [
+        {
+          programId: "0xUniPair",
+          keys: [],
+          data: "0x0902f1ac",
+        }, // getReserves
+        {
+          programId: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+          keys: [],
+          data: "0x022c0d9f",
+        }, // swap
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some(
+        (w) =>
+          w.patternId === PatternId.OracleManipulation &&
+          w.message.includes("getReserves")
+      )
+    ).toBe(true);
+  });
+
+  // ── Edge cases ──
+
   it("returns empty for empty instructions", () => {
     expect(analyzeEvmTransaction(makeEvmTx())).toEqual([]);
+  });
+
+  it("handles Uniswap V3 selectors", () => {
+    const router = "0xe592427a0aece92de3edee1f18e0157c05861564";
+    const tx = makeEvmTx({
+      instructions: [
+        { programId: router, keys: [], data: "0x414bf389" }, // exactInputSingle
+        { programId: "0xOther", keys: [], data: "0x12345678" },
+        { programId: router, keys: [], data: "0x414bf389" }, // exactInputSingle
+      ],
+    });
+    const warnings = analyzeEvmTransaction(tx);
+    expect(
+      warnings.some((w) => w.patternId === PatternId.FrontRunning)
+    ).toBe(true);
   });
 });

@@ -20,6 +20,11 @@ export enum PatternId {
   FlashLoanAttack = "EVM-002",
   FrontRunning = "EVM-003",
   UnauthorizedAccess = "EVM-004",
+  ProxyManipulation = "EVM-005",
+  SelfdestructAbuse = "EVM-006",
+  ApprovalExploitation = "EVM-007",
+  OracleManipulation = "EVM-008",
+  GovernanceManipulation = "EVM-009",
 }
 
 export enum Severity {
@@ -40,6 +45,7 @@ export interface ValidationResult {
   isValid: boolean;
   warnings: SecurityWarning[];
   blockedBy?: PatternId[];
+  simulation?: SimulationResult;
 }
 
 export interface TransactionInstruction {
@@ -72,6 +78,59 @@ export interface GuardConfig {
   validateTransferHooks?: boolean;
   maxHookAccounts?: number;
   allowedHookPrograms?: string[];
+  // EVM-specific
+  trustedEvmAddresses?: string[];
+  /** User-supplied oracle contract addresses to monitor (lowercase 0x-prefixed) */
+  oracleAddresses?: string[];
+  /** EVM RPC URL for resolving oracles from Chainlink Feed Registry at runtime */
+  oracleRegistryRpcUrl?: string;
+  // Simulation
+  enableSimulation?: boolean;
+  simulationConfig?: SimulationConfig;
+  /** When true, blocks transactions that haven't been successfully simulated */
+  simulationRequired?: boolean;
+}
+
+// ── Simulation Types ──
+
+export interface SimulationConfig {
+  /** Fork URL for EVM simulation (e.g. Anvil RPC) */
+  evmForkUrl?: string;
+  /** Solana RPC URL for simulation */
+  solanaRpcUrl?: string;
+  /** Block number to fork from (EVM) */
+  forkBlockNumber?: number;
+  /** Timeout in ms for simulation (default: 30000) */
+  timeout?: number;
+  /** Whether to trace state changes */
+  traceStateDiffs?: boolean;
+}
+
+export interface SimulationResult {
+  success: boolean;
+  chain: Chain;
+  gasUsed?: number;
+  computeUnitsUsed?: number;
+  stateChanges?: StateChange[];
+  balanceChanges?: BalanceChange[];
+  logs?: string[];
+  error?: string;
+  revertReason?: string;
+}
+
+export interface StateChange {
+  address: string;
+  slot?: string;
+  previousValue?: string;
+  newValue?: string;
+}
+
+export interface BalanceChange {
+  address: string;
+  token?: string;
+  before: string;
+  after: string;
+  delta: string;
 }
 
 // ── Pattern Types ──
@@ -145,6 +204,7 @@ export interface BundleResult {
 export interface BundleStatusResponse {
   status: "pending" | "landed" | "failed" | "invalid";
   landedSlot?: number;
+  landedBlock?: number;
   transactions?: string[];
   error?: string;
 }
@@ -164,4 +224,33 @@ export enum TipLevel {
   High = 100000,
   VeryHigh = 1000000,
   Turbo = 10000000,
+}
+
+// ── Flashbots Types ──
+
+export enum FlashbotsNetwork {
+  Mainnet = "mainnet",
+  Goerli = "goerli",
+  Sepolia = "sepolia",
+}
+
+export interface FlashbotsBundle {
+  transactions: string[];
+  blockNumber: number;
+  minTimestamp?: number;
+  maxTimestamp?: number;
+  revertingTxHashes?: string[];
+}
+
+export interface MevShareBundle {
+  transactions: string[];
+  blockNumber: number;
+  privacy?: {
+    hints?: ("calldata" | "contract_address" | "logs" | "function_selector" | "hash")[];
+    builders?: string[];
+  };
+  validity?: {
+    refund?: { bodyIdx: number; percent: number }[];
+    refundConfig?: { address: string; percent: number }[];
+  };
 }
