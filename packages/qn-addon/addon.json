@@ -9,7 +9,7 @@
     "email": "support@fabrknt.com",
     "url": "https://fabrknt.com/support"
   },
-  "repository": "https://github.com/psyto/sentinel",
+  "repository": "https://github.com/fabrknt/sentinel",
   "chains": [
     {
       "id": "solana",

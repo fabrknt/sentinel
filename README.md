@@ -8,8 +8,8 @@ Chain-agnostic DeFi security infrastructure. Transaction security analysis, exec
 
 | Package | Description |
 |---------|-------------|
-| `@sentinel/core` | Guard detector, simulation sandbox, pattern builders, bundle managers |
-| `@sentinel/qn-addon` | QuickNode Marketplace REST add-on (Express) |
+| `@fabrknt/sentinel-core` | Guard detector, simulation sandbox, pattern builders, bundle managers |
+| `@fabrknt/sentinel-qn-addon` | QuickNode Marketplace REST add-on (Express) |
 
 ## Guard — Transaction Security Analysis
 
@@ -112,8 +112,8 @@ Uses `@noble/hashes` (keccak256) and `@noble/curves` (secp256k1) — audited, ze
 **SDK usage** — bring your own signer:
 
 ```typescript
-import { FlashbotsBundleManager } from "@sentinel/core";
-import type { AuthSigner } from "@sentinel/core";
+import { FlashbotsBundleManager } from "@fabrknt/sentinel-core";
+import type { AuthSigner } from "@fabrknt/sentinel-core";
 
 // With ethers.js v6
 import { Wallet, id } from "ethers";
@@ -177,7 +177,7 @@ All `/v1/*` API routes pass through:
 ### As SDK
 
 ```typescript
-import { Guard, buildGridTradingPlan, BundleManager } from "@sentinel/core";
+import { Guard, buildGridTradingPlan, BundleManager } from "@fabrknt/sentinel-core";
 
 // Analyze a transaction (Solana or EVM)
 const guard = new Guard({ mode: "block", riskTolerance: "strict" });
@@ -246,7 +246,7 @@ curl -X POST http://localhost:3050/v1/bundle/tip \
 ## Architecture
 
 ```
-@sentinel/core
+@fabrknt/sentinel-core
 ├── guard/
 │   ├── index.ts               # Guard class with simulation + oracle integration
 │   ├── detector.ts            # Chain-routing dispatcher
@@ -263,7 +263,7 @@ curl -X POST http://localhost:3050/v1/bundle/tip \
 │   └── index.ts               # Chain-agnostic execution builders
 └── types.ts                   # Chain type, Transaction, SecurityWarning, etc.
 
-@sentinel/qn-addon
+@fabrknt/sentinel-qn-addon
 ├── server.ts                  # Express app with middleware chain
 ├── routes/
 │   ├── provision.ts           # PUDD lifecycle endpoints
@@ -309,10 +309,10 @@ See [`.env.example`](.env.example) for all configuration options.
 pnpm test
 
 # Core only (151 tests: guard, simulation, patterns, types, integration)
-pnpm --filter @sentinel/core test
+pnpm --filter @fabrknt/sentinel-core test
 
 # Add-on only (34 tests: routes, auth-signer)
-pnpm --filter @sentinel/qn-addon test
+pnpm --filter @fabrknt/sentinel-qn-addon test
 ```
 
 ## Fabrknt Product Suite

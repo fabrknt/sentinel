@@ -10,8 +10,8 @@ import {
   FlashbotsNetwork,
   BundleManager,
   JitoError,
-} from "@sentinel/core";
-import type { FlashbotsBundle, MevShareBundle, AuthSigner } from "@sentinel/core";
+} from "@fabrknt/sentinel-core";
+import type { FlashbotsBundle, MevShareBundle, AuthSigner } from "@fabrknt/sentinel-core";
 
 export const bundleRoutes = Router();
 

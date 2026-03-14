@@ -8,7 +8,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "dev": "pnpm --filter @sentinel/qn-addon dev"
+    "dev": "pnpm --filter @fabrknt/sentinel-qn-addon dev"
   },
   "devDependencies": {
     "turbo": "^2.4.0",

@@ -1,6 +1,6 @@
 {
-  "name": "@sentinel/qn-addon",
-  "version": "0.1.0",
+  "name": "@fabrknt/sentinel-qn-addon",
+  "version": "1.0.0",
   "description": "Fabrknt DeFi Toolkit — QuickNode Marketplace add-on for transaction guard, execution patterns, and Jito bundles",
   "main": "dist/server.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "dependencies": {
     "@noble/curves": "^1.9.7",
     "@noble/hashes": "^1.8.0",
-    "@sentinel/core": "file:../core",
+    "@fabrknt/sentinel-core": "workspace:*",
     "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -31,5 +31,9 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0",
     "vitest": "^1.6.1"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   }
 }

@@ -6,7 +6,7 @@ import {
   buildGridTradingPlan,
   buildDCAPlan,
   buildRebalancePlan,
-} from "@sentinel/core";
+} from "@fabrknt/sentinel-core";
 import type {
   BatchPayoutConfig,
   RecurringPaymentConfig,
@@ -14,7 +14,7 @@ import type {
   GridTradingConfig,
   DCAConfig,
   RebalanceConfig,
-} from "@sentinel/core";
+} from "@fabrknt/sentinel-core";
 
 export const patternRoutes = Router();
 

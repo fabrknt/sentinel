@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { Guard, analyzeTransaction } from "@sentinel/core";
-import type { Transaction, GuardConfig } from "@sentinel/core";
+import { Guard, analyzeTransaction } from "@fabrknt/sentinel-core";
+import type { Transaction, GuardConfig } from "@fabrknt/sentinel-core";
 
 export const guardRoutes = Router();
 
