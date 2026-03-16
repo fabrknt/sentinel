@@ -27,8 +27,11 @@
     "vitest": "^1.0.0"
   },
   "license": "MIT",
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }
