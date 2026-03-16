@@ -1,5 +1,8 @@
 # @fabrknt/sentinel-core
 
+[![npm version](https://img.shields.io/npm/v/@fabrknt/sentinel-core.svg)](https://www.npmjs.com/package/@fabrknt/sentinel-core)
+[![npm downloads](https://img.shields.io/npm/dm/@fabrknt/sentinel-core.svg)](https://www.npmjs.com/package/@fabrknt/sentinel-core)
+
 Transaction security analysis, execution pattern builders, and atomic bundle management for Solana and EVM chains.
 
 Not every DeFi protocol needs TradFi compliance -- but if yours does, you shouldn't have to rebuild from scratch. Fabrknt plugs into your existing protocol with composable SDKs and APIs. No permissioned forks, no separate deployments.
