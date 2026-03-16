@@ -33,15 +33,15 @@ importers:
 
   packages/qn-addon:
     dependencies:
+      '@fabrknt/sentinel-core':
+        specifier: workspace:*
+        version: link:../core
       '@noble/curves':
         specifier: ^1.9.7
         version: 1.9.7
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0
-      '@sentinel/core':
-        specifier: file:../core
-        version: file:packages/core(typescript@5.9.3)
       better-sqlite3:
         specifier: ^11.10.0
         version: 11.10.0
@@ -561,9 +561,6 @@ packages:
     resolution: {integrity: sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA==}
     cpu: [x64]
     os: [win32]
-
-  '@sentinel/core@file:packages/core':
-    resolution: {directory: packages/core, type: directory}
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
@@ -2093,15 +2090,6 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.59.0':
     optional: true
-
-  '@sentinel/core@file:packages/core(typescript@5.9.3)':
-    dependencies:
-      '@solana/web3.js': 1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - typescript
-      - utf-8-validate
 
   '@sinclair/typebox@0.27.10': {}
 
