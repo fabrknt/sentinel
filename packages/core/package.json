@@ -1,6 +1,6 @@
 {
   "name": "@fabrknt/sentinel-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Transaction guard, execution patterns, and Jito bundle management",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
