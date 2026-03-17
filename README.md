@@ -1,8 +1,11 @@
 # Sentinel
 
+[![npm version](https://img.shields.io/npm/v/@fabrknt/sentinel-core.svg)](https://www.npmjs.com/package/@fabrknt/sentinel-core)
+[![npm downloads](https://img.shields.io/npm/dm/@fabrknt/sentinel-core.svg)](https://www.npmjs.com/package/@fabrknt/sentinel-core)
+
 Chain-agnostic DeFi security infrastructure. Transaction security analysis, execution patterns, and atomic bundle management.
 
-**Fabrknt DeFi Toolkit** (`fabrknt-defi-toolkit`) — the 5th Fabrknt QuickNode Marketplace add-on.
+Part of [Fabrknt](https://fabrknt.com) — plug-in compliance for existing DeFi protocols. `npm install @fabrknt/sentinel-core`
 
 ## Packages
 
